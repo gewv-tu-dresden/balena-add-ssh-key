@@ -2,8 +2,7 @@
 import { getSdk } from 'balena-sdk';
 import dotenv from 'dotenv'
 import { ChildProcess } from 'child_process'
-import { closeTunnel, createBalenaTunnel, loginBalenaShell, sleep } from './utils';
-import { NodeSSH } from 'node-ssh'
+import { closeTunnel, connectSSH, createBalenaTunnel, createFolder, loginBalenaShell } from './utils';
 import fs from 'fs'
 
 dotenv.config()
@@ -12,29 +11,7 @@ const KEYS_TO_ADD = JSON.parse(fs.readFileSync('./keys_to_add.json', 'utf-8'))
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN
 const SSH_PRIVATE_KEY_PATH = process.env.SSH_PRIVATE_KEY_PATH
 let currentChildProcess: null | ChildProcess = null
-const ssh = new NodeSSH()
 
-async function createFolder() {
-    const folders = [
-        './tmp/balena',
-        './tmp/configs',
-    ]
-
-    for (const folder of folders) {
-        if (!fs.existsSync(folder)) {
-            fs.mkdirSync(folder, { recursive: true })
-        }
-    }
-}
-
-async function connectSSH(privatKeyPath: string) {
-    return ssh.connect({
-        host: 'localhost',
-        port: 22222,
-        username: 'root',
-        privateKey: fs.readFileSync(privatKeyPath, 'utf8'),
-    })
-}
 
 async function main() {
     if (ACCESS_TOKEN == null) return
