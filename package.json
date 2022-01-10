@@ -1,0 +1,21 @@
+{
+  "name": "balena-add-ssh-key",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "balena-sdk": "^16.11.2",
+    "dotenv": "^10.0.0",
+    "node-ssh": "^12.0.2",
+    "ssh2": "^1.5.0",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  },
+  "scripts": {
+    "start": "ts-node index.ts"
+  },
+  "devDependencies": {
+    "@types/ssh2": "^0.5.50",
+    "@types/ssh2-streams": "^0.1.9"
+  }
+}
