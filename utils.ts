@@ -1,4 +1,8 @@
 import { spawn, exec, ChildProcess } from 'child_process'
+import fs from 'fs'
+import { NodeSSH } from 'node-ssh'
+
+const ssh = new NodeSSH()
 
 type balenaTunnelOptions = {
     uuid: string,
@@ -8,6 +12,28 @@ type balenaTunnelOptions = {
 type closeTunnelOptions = {
     tunnel: ChildProcess,
     signal?: number | NodeJS.Signals
+}
+
+export async function createFolder() {
+    const folders = [
+        './tmp/balena',
+        './tmp/configs',
+    ]
+
+    for (const folder of folders) {
+        if (!fs.existsSync(folder)) {
+            fs.mkdirSync(folder, { recursive: true })
+        }
+    }
+}
+
+export async function connectSSH(privatKeyPath: string) {
+    return ssh.connect({
+        host: 'localhost',
+        port: 22222,
+        username: 'root',
+        privateKey: fs.readFileSync(privatKeyPath, 'utf8'),
+    })
 }
 
 export async function sleep(ms: number) {
