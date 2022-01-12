@@ -13,9 +13,13 @@ Install deps with `yarn install`. Then you have to create two files. A `.env` to
 ```
 ACCESS_TOKEN=****************
 SSH_PRIVATE_KEY_PATH=/key/to/ssh/private/key
+BALENA_API_HOST=https://api.balena.example.org/
 ```
 
+The tool use `balena tunnel` to create a proxy tunnel to the device. You should make sure that you can.
+
 The access token is the access token for the balena service. The same you use for the balena-cli. Maybe you have to create a token. The private ssh key is that part of the key pair, that is already on device.
+
 The second file you have to create is a `options.json`. That json has the following structur and holds the information, what keys should be add and on which device. You can define the boxes directly per uuid in the array `devices` or with the application or fleetname in the array `fleets`. But it is not possible to use both ways.
 
 ```json
@@ -24,10 +28,12 @@ The second file you have to create is a `options.json`. That json has the follow
         "device_uuid",
         ...
     ],
+    // or
     "fleets": [
         "Application_1",
         ...
     ],
+
     "blacklist": [
         "devices_that_will_skipped",
         ...

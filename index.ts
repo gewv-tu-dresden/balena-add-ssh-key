@@ -2,7 +2,7 @@
 import { getSdk } from 'balena-sdk';
 import dotenv from 'dotenv'
 import { ChildProcess } from 'child_process'
-import { closeTunnel, connectSSH, createBalenaTunnel, createFolder, loginBalenaShell } from './utils';
+import { closeTunnel, connectSSH, createBalenaTunnel, createFolder, loginBalenaShell, sleep } from './utils';
 import options from './options.json'
 
 dotenv.config()
@@ -13,6 +13,7 @@ const BLACKLIST: Array<string> = options.blacklist || []
 const KEYS: Array<string> = options.keys || []
 const ACCESS_TOKEN = process.env.ACCESS_TOKEN
 const SSH_PRIVATE_KEY_PATH = process.env.SSH_PRIVATE_KEY_PATH
+const BALENA_API_HOST = process.env.BALENA_API_HOST
 const BOOT_FOLDER = "/mnt/boot"
 const CONFIG_FILE_NAME = 'config.json'
 const BACKUP_CONFIG_FILE_NAME = `backup.${CONFIG_FILE_NAME}`
@@ -23,14 +24,14 @@ async function main() {
     if (FLEETS.length > 0 && DEVICES.length > 0) throw new Error("You can only define boxes per fleet or per uuid, but not both at once.")
     if (FLEETS.length === 0 && DEVICES.length === 0) throw new Error("You defined no fleets and no device uuids.")
     if (KEYS.length === 0) throw new Error("Found no keys in the options.json.")
-
-    if (ACCESS_TOKEN == null) return
-    if (SSH_PRIVATE_KEY_PATH == null) return
+    if (BALENA_API_HOST == null) throw new Error("We need the url of your balena instance.")
+    if (ACCESS_TOKEN == null) throw new Error("We need a access token to get all accable devices.")
+    if (SSH_PRIVATE_KEY_PATH == null) throw new Error("We need the path to the ssh private key, to create a SSH-Connection.")
 
     await createFolder()
 
     const balena = getSdk({
-        apiUrl: "https://api.balena.iet.mw.tu-dresden.de/",
+        apiUrl: BALENA_API_HOST,
         dataDirectory: "./tmp/balena",
     });
 
@@ -45,6 +46,7 @@ async function main() {
         const deviceName = device.device_name
         const shortUuid = device.uuid.slice(0, 7)
         const logPrefix = `[${shortUuid}]: ${deviceName}`.padEnd(25).slice(0, 25) + ' - '
+        let tunnelConnected = false
 
         // skip the device it it stands on the blacklist
         if (BLACKLIST.includes(device.uuid)) continue
@@ -69,9 +71,11 @@ async function main() {
                 uuid: device.uuid,
                 onClose: async (uuid, tun, code) => {
                     console.log(logPrefix, 'Tunnel to device closed!')
+                    tunnelConnected = false
                 },
             })
             console.log(logPrefix, 'Tunnel to device established!')
+            tunnelConnected = true
 
             // create ssh connection
             const ssh = await connectSSH(SSH_PRIVATE_KEY_PATH)
@@ -119,15 +123,30 @@ async function main() {
                 // restart the device
                 await ssh.execCommand('reboot')
             }
-
-            await closeTunnel({ tunnel: currentChildProcess, signal: "SIGTERM" })
-            return
         } catch (err) {
             console.error(logPrefix, 'Failed to transmit ssh key for device.')
             console.error(err)
-
+        } finally {
             if (currentChildProcess != null) {
                 await closeTunnel({ tunnel: currentChildProcess, signal: "SIGTERM" })
+                const now = Date.now()
+
+                while (tunnelConnected) {
+                    if (Date.now() - now > 60000) {
+                        console.error(logPrefix, "Failed to close tunnel. Try to kill proxy tunnel.")
+                        break
+                    }
+                    await sleep(100)
+                }
+
+                await closeTunnel({ tunnel: currentChildProcess, signal: "SIGKILL" })
+                while (tunnelConnected) {
+                    if (Date.now() - now > 60000) {
+                        console.error(logPrefix, "Failed to close tunnel. Try to kill proxy tunnel.")
+                        throw Error("Close Tunnel failed.")
+                    }
+                    await sleep(100)
+                }
             }
         }
     }
