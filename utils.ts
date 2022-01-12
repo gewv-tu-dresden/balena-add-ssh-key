@@ -43,9 +43,6 @@ export async function sleep(ms: number) {
 export async function loginBalenaShell(token: string): Promise<void> {
     return new Promise((res, rej) => {
         const child = exec(`balena login --token ${token}`)
-        if (child.stdout != null) {
-            child.stdout.pipe(process.stdout)
-        }
         child.on('exit', function () {
             res()
         })
@@ -60,7 +57,7 @@ export async function createBalenaTunnel({ uuid, onClose }: balenaTunnelOptions)
         const bTunnel = spawn('balena', ['tunnel', uuid, '-p 22222'], { detached: true })
 
         bTunnel.stdout.on("data", data => {
-            console.log(`[tunnel - ${uuid.slice(0, 7)}]${data}`);
+            // console.log(`[tunnel - ${uuid.slice(0, 7)}]${data}`);
 
             if (data.includes("Waiting for connections...")) {
                 res(bTunnel)
@@ -68,7 +65,7 @@ export async function createBalenaTunnel({ uuid, onClose }: balenaTunnelOptions)
         });
 
         bTunnel.stderr.on("data", data => {
-            console.log(`[error - tunnel - ${uuid.slice(0, 7)}]${data}`);
+            // console.log(`[error - tunnel - ${uuid.slice(0, 7)}]${data}`);
 
             if (data.includes("No ports are valid for tunnelling")) {
                 rej("The target port 22222 is already in use!")
@@ -94,13 +91,11 @@ export async function createBalenaTunnel({ uuid, onClose }: balenaTunnelOptions)
 
 
 export async function closeTunnel({ tunnel, signal }: closeTunnelOptions): Promise<void> {
-    console.log("Try to close the tunnel!")
     tunnel.kill(signal)
 
     while (!tunnel.killed) {
         await sleep(100)
     }
 
-    console.log("Tunnel closed!")
     return
 }
