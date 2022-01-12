@@ -1,4 +1,4 @@
-# Add SSHKey to Balena Device Script
+# Deploy SSH Keys on Balena Devices per Script
 
 ## How to use
 
