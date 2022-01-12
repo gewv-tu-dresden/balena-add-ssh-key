@@ -100,7 +100,7 @@ async function main() {
             }
 
             if (!addedKeys) {
-                console.log(logPrefix, 'Added no keys to config of device. Continue to next.')
+                console.log(logPrefix, 'All keys already deployed. Continue to next.')
                 await closeTunnel({ tunnel: currentChildProcess, signal: "SIGTERM" })
                 continue
             }
