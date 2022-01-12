@@ -8,4 +8,4 @@ node_modules
 tmp
 
 # ssh keys
-keys_to_add.json
+options.json
